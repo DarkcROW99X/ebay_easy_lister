@@ -1,1 +1,31 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Scheda Prodotto Generata</title>
+</head>
+<body>
+    <h2>{{ title }}</h2>
+    <p><strong>Prezzo originale:</strong> €{{ price_original }}</p>
+    <p><strong>Prezzo con margine (+20%):</strong> €{{ price_final }}</p>
+
+    <h3>HTML da incollare su eBay:</h3>
+    <textarea style="width: 100%; height: 300px;" readonly>
+<h2>{{ title }}</h2>
+<p><strong>Descrizione:</strong> {{ description }}</p>
+{% for img in images %}
+<img src="{{ img }}" width="300"><br>
+{% endfor %}
+    </textarea>
+
+    <h3>Anteprima:</h3>
+    <p><strong>Descrizione:</strong> {{ description }}</p>
+    {% for img in images %}
+        <img src="{{ img }}" width="300"><br>
+    {% endfor %}
+
+    <br><br>
+    <a href="/">← Torna indietro</a>
+</body>
+</html>
 
