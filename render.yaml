@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: ebay-easy-lister
+    env: python
+    plan: free
+    buildCommand: |
+      mkdir -p /tmp/pw-browsers
+      pip install --upgrade pip
+      pip install -r requirements.txt
+      PLAYWRIGHT_BROWSERS_PATH=/tmp/pw-browsers playwright install chromium
+    startCommand: |
+      PLAYWRIGHT_BROWSERS_PATH=/tmp/pw-browsers python app.py
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "true"
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: /tmp/pw-browsers
