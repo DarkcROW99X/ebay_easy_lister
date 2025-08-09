@@ -19,6 +19,17 @@ def ensure_chromium():
         print("[INFO] Chromium installato.")
 
 
+def fetch_page_content(url):
+    ensure_chromium()
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto(url)
+        html = page.content()
+        browser.close()
+    return html, None
+
+
 # ==========================================================
 
 
