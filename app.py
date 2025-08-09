@@ -1,7 +1,26 @@
 from flask import Flask, render_template, request
 import os
 import re
+import subprocess
 from playwright.sync_api import sync_playwright
+
+
+# ======= Fallback automatico installazione Chromium =======
+def ensure_chromium():
+    browsers_path = os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "/tmp/pw-browsers")
+    chromium_dir = os.path.join(browsers_path, "chromium")
+    if not os.path.exists(chromium_dir):
+        print("[INFO] Chromium non trovato, installazione in corso...")
+        subprocess.run(
+            ["playwright", "install", "chromium"],
+            env={**os.environ, "PLAYWRIGHT_BROWSERS_PATH": browsers_path},
+            check=True
+        )
+        print("[INFO] Installazione Chromium completata.")
+
+ensure_chromium()
+# ==========================================================
+
 
 app = Flask(__name__)
 
