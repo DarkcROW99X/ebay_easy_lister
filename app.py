@@ -57,59 +57,122 @@ def fetch_page_fallback(url):
         return f"Errore nel fallback: {e}", url
 
 
+
 def fetch_amazon_data(url):
     html, _ = fetch_page_content(url)
+    soup = BeautifulSoup(html, "html.parser")
 
-    # Titolo
-    title_match = re.search(r'id="productTitle".*?>(.*?)<', html, re.S)
-    title = title_match.group(1).strip() if title_match else "Titolo non trovato"
+    # --- Titolo ---
+    title_el = soup.select_one("#productTitle")
+    title = title_el.get_text(strip=True) if title_el else "Titolo non trovato"
 
-    # Prezzo (più robusto)
-    price_match = re.search(r'€\s?([\d,.]+)', html)
-    price = float(price_match.group(1).replace('.', '').replace(',', '.')) if price_match else 20.00
+    # --- Prezzo ---
+    price = None
+    selectors = [
+        "#priceblock_ourprice",
+        "#priceblock_dealprice",
+        "#priceblock_saleprice",
+        ".a-price .a-offscreen"
+    ]
+    for sel in selectors:
+        el = soup.select_one(sel)
+        if el and el.get_text(strip=True):
+            price_text = el.get_text(strip=True)
+            price_clean = re.sub(r"[^\d,\.]", "", price_text)
+            if "," in price_clean and price_clean.rfind(",") > price_clean.rfind("."):
+                price_clean = price_clean.replace(".", "").replace(",", ".")
+            else:
+                price_clean = price_clean.replace(",", "")
+            try:
+                price = float(price_clean)
+                break
+            except:
+                continue
+    if price is None:
+        price = 20.00  # fallback
 
-    # Descrizione
-    desc_match = re.search(r'<meta name="description" content="([^"]+)"', html)
-    description = desc_match.group(1).strip() if desc_match else "Descrizione non trovata."
+    # --- Descrizione ---
+    desc = None
+    meta_desc = soup.find("meta", attrs={"name": "description"})
+    if meta_desc and meta_desc.get("content"):
+        desc = meta_desc["content"].strip()
+    else:
+        bullet_points = soup.select("#feature-bullets li span")
+        desc = " ".join([bp.get_text(strip=True) for bp in bullet_points if bp.get_text(strip=True)]) or "Descrizione non trovata."
 
-    # Immagini
-    images = list(set(re.findall(r'https://[^"]+\.jpg', html)))
-    images = [img for img in images if "media-amazon" in img][:5]
+    # --- Immagini ---
+    images = []
+    for img_tag in soup.select("img[src]"):
+        src = img_tag["src"]
+        if "media-amazon" in src and src.endswith(".jpg") and src not in images:
+            images.append(src)
+    images = images[:5]  # max 5 immagini
 
     return {
         "title": title,
         "price": price,
-        "description": description,
+        "description": desc,
         "images": images
     }
+
 
 def fetch_aliexpress_data(url):
     html, _ = fetch_page_content(url)
+    soup = BeautifulSoup(html, "html.parser")
 
-    # Titolo
-    title_match = re.search(r'<title>(.*?)</title>', html, re.S)
-    title = title_match.group(1).strip() if title_match else "Titolo non trovato"
+    # --- Titolo ---
+    title_el = soup.select_one("h1.product-title-text") or soup.find("title")
+    title = title_el.get_text(strip=True) if title_el else "Titolo non trovato"
 
-    # Prezzo
-    price_match = re.search(r'"salePrice"\s*:\s*"([\d,.]+)"', html)
-    if not price_match:
-        price_match = re.search(r'"price"\s*:\s*"([\d,.]+)"', html)
-    price = float(price_match.group(1).replace(',', '.')) if price_match else 10.00
+    # --- Prezzo ---
+    price = None
+    selectors = [
+        "div.product-price-current span",
+        "span.uniform-banner-box-price",
+        "div.product-price-value"
+    ]
+    for sel in selectors:
+        el = soup.select_one(sel)
+        if el and el.get_text(strip=True):
+            price_text = el.get_text(strip=True)
+            price_clean = re.sub(r"[^\d,\.]", "", price_text)
+            if "," in price_clean and price_clean.rfind(",") > price_clean.rfind("."):
+                price_clean = price_clean.replace(".", "").replace(",", ".")
+            else:
+                price_clean = price_clean.replace(",", "")
+            try:
+                price = float(price_clean)
+                break
+            except:
+                continue
+    if price is None:
+        price = 10.00  # fallback
 
-    # Descrizione
-    desc_match = re.search(r'<meta name="description" content="([^"]+)"', html)
-    description = desc_match.group(1).strip() if desc_match else "Descrizione non trovata."
+    # --- Descrizione ---
+    desc = None
+    meta_desc = soup.find("meta", attrs={"name": "description"})
+    if meta_desc and meta_desc.get("content"):
+        desc = meta_desc["content"].strip()
+    else:
+        summary = soup.select_one(".product-detail-main .product-description")
+        desc = summary.get_text(strip=True) if summary else "Descrizione non trovata."
 
-    # Immagini
-    images = list(set(re.findall(r'https://[^"]+\.jpg', html)))
-    images = [img for img in images if "alicdn.com" in img][:5]
+    # --- Immagini ---
+    images = []
+    for img_tag in soup.select("img[src]"):
+        src = img_tag["src"]
+        if "alicdn.com" in src and src.endswith(".jpg") and src not in images:
+            images.append(src)
+    images = images[:5]  # max 5 immagini
 
     return {
         "title": title,
         "price": price,
-        "description": description,
+        "description": desc,
         "images": images
     }
+
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
