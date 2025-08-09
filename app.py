@@ -121,8 +121,17 @@ def fetch_aliexpress_data(url):
     soup = BeautifulSoup(html, "html.parser")
 
     # --- Titolo ---
+    title = None
     title_el = soup.select_one("h1.product-title-text") or soup.find("title")
-    title = title_el.get_text(strip=True) if title_el else "Titolo non trovato"
+    if title_el:
+        title = title_el.get_text(strip=True)
+    else:
+        # Prova a recuperare il titolo dal JSON embedded
+        match = re.search(r'"subject"\s*:\s*"([^"]+)"', html)
+        if match:
+            title = match.group(1)
+    if not title:
+        title = "Titolo non trovato"
 
     # --- Prezzo ---
     price = None
@@ -133,7 +142,7 @@ def fetch_aliexpress_data(url):
     ]
     for sel in selectors:
         el = soup.select_one(sel)
-        if el and el.get_text(strip=True):
+        if el:
             price_text = el.get_text(strip=True)
             price_clean = re.sub(r"[^\d,\.]", "", price_text)
             if "," in price_clean and price_clean.rfind(",") > price_clean.rfind("."):
@@ -144,9 +153,21 @@ def fetch_aliexpress_data(url):
                 price = float(price_clean)
                 break
             except:
-                continue
-    if price is None:
-        price = 10.00  # fallback
+                pass
+
+    if not price:
+        # fallback dal JSON
+        match = re.search(r'"salePrice"\s*:\s*"([\d\.,]+)"', html)
+        if not match:
+            match = re.search(r'"price"\s*:\s*"([\d\.,]+)"', html)
+        if match:
+            price_clean = match.group(1).replace(",", ".").replace(" ", "")
+            try:
+                price = float(price_clean)
+            except:
+                price = 10.00
+        else:
+            price = 10.00
 
     # --- Descrizione ---
     desc = None
@@ -154,15 +175,33 @@ def fetch_aliexpress_data(url):
     if meta_desc and meta_desc.get("content"):
         desc = meta_desc["content"].strip()
     else:
-        summary = soup.select_one(".product-detail-main .product-description")
-        desc = summary.get_text(strip=True) if summary else "Descrizione non trovata."
+        # A volte è dentro uno script
+        match = re.search(r'"description"\s*:\s*"([^"]+)"', html)
+        if match:
+            desc = match.group(1)
+    if not desc:
+        desc = "Descrizione non trovata."
 
     # --- Immagini ---
     images = []
+    # Primo tentativo: <img src>
     for img_tag in soup.select("img[src]"):
         src = img_tag["src"]
         if "alicdn.com" in src and src.endswith(".jpg") and src not in images:
             images.append(src)
+
+    # Secondo tentativo: data-src (lazy loading)
+    for img_tag in soup.select("img[data-src]"):
+        src = img_tag["data-src"]
+        if "alicdn.com" in src and src.endswith(".jpg") and src not in images:
+            images.append(src)
+
+    # Terzo tentativo: JSON embedded
+    matches = re.findall(r'https://[^"]+\.alicdn\.com[^"]+\.jpg', html)
+    for m in matches:
+        if m not in images:
+            images.append(m)
+
     images = images[:5]  # max 5 immagini
 
     return {
