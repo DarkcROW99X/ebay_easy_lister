@@ -4,14 +4,12 @@ services:
     env: python
     plan: free
     buildCommand: |
-      mkdir -p /tmp/pw-browsers
       pip install --upgrade pip
       pip install -r requirements.txt
-      PLAYWRIGHT_BROWSERS_PATH=/tmp/pw-browsers playwright install chromium
     startCommand: |
+      mkdir -p /tmp/pw-browsers && \
+      PLAYWRIGHT_BROWSERS_PATH=/tmp/pw-browsers playwright install chromium && \
       PLAYWRIGHT_BROWSERS_PATH=/tmp/pw-browsers python app.py
     envVars:
       - key: PYTHONUNBUFFERED
         value: "true"
-      - key: PLAYWRIGHT_BROWSERS_PATH
-        value: /tmp/pw-browsers
