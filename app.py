@@ -10,12 +10,12 @@ BROWSER_PATH = os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "/tmp/pw-browsers")
 # ======= Fallback automatico installazione Chromium =======
 def ensure_chromium():
     browser_path = os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "/tmp/pw-browsers")
-    chromium_bin = os.path.join(browsers_path, "chromium")
-    if not os.path.exists(browsers_path) or not any("chromium" in d for d in os.listdir(browsers_path)):
+    chromium_bin = os.path.join(browser_path, "chromium")
+    if not os.path.exists(browser_path) or not any("chromium" in d for d in os.listdir(browser_path)):
         print("[INFO] Chromium mancante, installazione...")
         subprocess.run(
             ["playwright", "install", "chromium"],
-            env={**os.environ, "PLAYWRIGHT_BROWSERS_PATH": browsers_path},
+            env={**os.environ, "PLAYWRIGHT_BROWSERS_PATH": browser_path},
             check=True
         )
         print("[INFO] Chromium installato.")
