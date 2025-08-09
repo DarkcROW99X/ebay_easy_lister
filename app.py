@@ -7,18 +7,18 @@ from playwright.sync_api import sync_playwright
 
 # ======= Fallback automatico installazione Chromium =======
 def ensure_chromium():
-    browsers_path = os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "/tmp/pw-browsers")
-    chromium_dir = os.path.join(browsers_path, "chromium")
-    if not os.path.exists(chromium_dir):
-        print("[INFO] Chromium non trovato, installazione in corso...")
+    browsers_path = os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "/opt/pw-browsers")
+    chromium_bin = os.path.join(browsers_path, "chromium")
+    if not os.path.exists(browsers_path) or not any("chromium" in d for d in os.listdir(browsers_path)):
+        print("[INFO] Chromium mancante, installazione...")
         subprocess.run(
             ["playwright", "install", "chromium"],
             env={**os.environ, "PLAYWRIGHT_BROWSERS_PATH": browsers_path},
             check=True
         )
-        print("[INFO] Installazione Chromium completata.")
+        print("[INFO] Chromium installato.")
 
-ensure_chromium()
+
 # ==========================================================
 
 
