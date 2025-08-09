@@ -27,7 +27,7 @@ def ensure_chromium():
 
 
 app = Flask(__name__)
- ensure_chromium()
+    ensure_chromium()
 
 def fetch_page_content(url):
     try:
