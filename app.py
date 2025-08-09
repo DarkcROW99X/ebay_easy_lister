@@ -30,29 +30,32 @@ app = Flask(__name__)
 ensure_chromium()
 
 def fetch_page_content(url):
+    """Apre una pagina con Playwright in headless e restituisce HTML e URL corrente. 
+       Se Playwright fallisce, prova il fallback con requests."""
     try:
+        ensure_chromium()
         with sync_playwright() as p:
-            browser = p.chromium.launch(
-                headless=True,
-                executable_path=None  # Lascia che Playwright trovi il binario installato in runtime
-            )
+            browser = p.chromium.launch(headless=True)
             page = browser.new_page()
             page.goto(url, wait_until="networkidle")
             html = page.content()
+            current_url = page.url
             browser.close()
-        return html
+        return html, current_url
     except Exception as e:
         print(f"[Fallback] Errore Playwright: {e}")
-        return fetch_page_fallback(url)
+        return fetch_page_fallback(url), url
+
 
 def fetch_page_fallback(url):
     try:
         headers = {"User-Agent": "Mozilla/5.0"}
         resp = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(resp.text, "html.parser")
-        return soup.prettify()
+        return soup.prettify(), url
     except Exception as e:
-        return f"Errore nel fallback: {e}"
+        return f"Errore nel fallback: {e}", url
+
 
 def fetch_amazon_data(url):
     html, _ = fetch_page_content(url)
