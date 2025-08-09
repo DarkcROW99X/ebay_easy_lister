@@ -8,11 +8,16 @@ services:
       mountPath: /opt/pw-browsers
       sizeGB: 1
     buildCommand: |
-      mkdir -p /opt/pw-browsers
+      mkdir -p /tmp/pw-browsers
       pip install --upgrade pip
       pip install -r requirements.txt
-      PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers playwright install chromium
-    startCommand: python app.py
+      PLAYWRIGHT_BROWSERS_PATH=/tmp/pw-browsers playwright install chromium
+    startCommand: |
+      if [ ! -d "/opt/pw-browsers" ] || [ -z "$(ls -A /opt/pw-browsers)" ]; then
+        mkdir -p /opt/pw-browsers
+        cp -r /tmp/pw-browsers/* /opt/pw-browsers/
+      fi
+      PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers python app.py
     envVars:
       - key: PYTHONUNBUFFERED
         value: "true"
